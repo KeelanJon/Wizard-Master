@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1025" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Coin Quest — Young Warrior</title>
+  <link rel="stylesheet" href="css/game.css?v=2" />
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="Game world"></canvas>
+    <div id="hud">
+      <div id="hud-top">
+        <div id="hearts"></div>
+        <div id="coin-display"><span id="coin-count">0</span></div>
+      </div>
+      <div id="hud-actions">
+        <button type="button" id="btn-tower" class="hidden" aria-label="Tower">Leave tower</button>
+        <button type="button" id="btn-shop" class="hidden" aria-label="Speak to wizard">Speak</button>
+        <button type="button" id="btn-menu" aria-label="Menu">&#9881;</button>
+      </div>
+    </div>
+
+    <!-- Shop / wizard panel -->
+    <div id="shop-panel" class="hidden" role="dialog" aria-modal="true" aria-labelledby="shop-title">
+      <div class="shop-inner">
+        <h2 id="shop-title">Wizard Master</h2>
+        <p id="shop-sub" class="shop-sub">Arcane wares and paths yet untraveled.</p>
+        <ul id="shop-list"></ul>
+        <button type="button" id="shop-close">Close</button>
+      </div>
+    </div>
+
+    <!-- Pause / settings menu -->
+    <div id="menu-panel" class="hidden" role="dialog" aria-modal="true" aria-labelledby="menu-title">
+      <div class="menu-inner">
+        <h2 id="menu-title">Paused</h2>
+        <div class="menu-setting">
+          <label for="vol-slider">Volume</label>
+          <input type="range" id="vol-slider" min="0" max="100" value="80" />
+        </div>
+        <div class="menu-setting">
+          <label>Audio</label>
+          <button type="button" id="btn-mute">Mute</button>
+        </div>
+        <hr class="menu-divider" />
+        <button type="button" id="btn-reset-prog">Reset progress</button>
+        <button type="button" id="btn-resume">Resume</button>
+      </div>
+    </div>
+
+    <!-- Gameboy-style controls: joystick + buttons.
+         On desktop this just wraps the joystick in its original position.
+         On portrait mobile it becomes the full bottom control panel. -->
+    <div id="gameboy-controls" aria-hidden="true">
+
+      <div id="gameboy-left">
+        <div id="joystick-zone">
+          <div id="joystick-base"></div>
+          <div id="joystick-stick"></div>
+        </div>
+      </div>
+
+      <div id="gameboy-center">
+        <button type="button" id="btn-gb-auto"  class="gb-btn-small">AUTO ON</button>
+        <button type="button" id="btn-gb-menu2" class="gb-btn-small">MENU</button>
+      </div>
+
+      <div id="gameboy-right">
+        <button type="button" id="btn-gb-fireball" class="gb-btn-action gb-fire" aria-label="Fireball (E)">
+          <span class="gba-label">FIRE</span>
+          <span class="gba-key">E</span>
+        </button>
+        <button type="button" id="btn-gb-dash" class="gb-btn-action gb-dash" aria-label="Dash (Space)">
+          <span class="gba-label">DASH</span>
+          <span class="gba-key">SPC</span>
+        </button>
+      </div>
+
+    </div>
+
+    <div id="toast"></div>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
