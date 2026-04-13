@@ -121,6 +121,25 @@ function syncGamepadHUD() {
   }
 }
 
+function startGame() {
+  if (!session.onStartScreen) return;
+  // Block re-entry while a fade is already running (e.g. death fade-out to start screen)
+  if (state.fade.dir !== 0 || state.fade.alpha > 0) return;
+  ensureAudio();
+  // Fade to black, then reveal the game world
+  state.fade.dir = 1;
+  state.fade.cb = () => {
+    session.onStartScreen = false;
+    document.getElementById("hud").style.display = "";
+    // Spawn initial wave if the world was cleared (first play or post-death)
+    if (state.enemies.length === 0) {
+      for (let i = 0; i < 5; i++) spawnEnemy();
+    }
+    updateHearts();
+    updateSceneHud();
+  };
+}
+
 function frame(now) {
   const dt = Math.min(0.05, (now - session.lastTime) / 1000) || 0.016;
   session.lastTime = now;
@@ -136,11 +155,17 @@ function init() {
   state.player.hp = state.upgrades.maxHp;
   coinEl.textContent = String(state.wallet);
   updateHearts();
+  // Hide HUD until the player starts the game
+  document.getElementById("hud").style.display = "none";
   resize();
   // Re-run after paint so the mobile viewport is fully settled
   setTimeout(resize, 100);
   window.addEventListener("resize", resize);
   bindJoystick();
+  // Allow joystick touches to begin the game from the start screen
+  document.getElementById("joystick-zone").addEventListener("touchstart", () => {
+    startGame();
+  }, { passive: true });
 
   // Shop / Speak button (tower only)
   document.getElementById("btn-shop").addEventListener("click", () => {
@@ -200,6 +225,7 @@ function init() {
 
   canvas.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
+    if (session.onStartScreen) { startGame(); return; }
     if (state.scene !== "overworld") return;
     if (session.paused || session.shopOpen) return;
     ensureAudio();
@@ -218,6 +244,7 @@ function init() {
   // Touch aiming on the canvas (portrait: canvas is above controls, no joystick overlap)
   canvas.addEventListener("touchstart", (e) => {
     e.preventDefault();
+    if (session.onStartScreen) { startGame(); return; }
     if (state.scene !== "overworld" || session.paused || session.shopOpen) return;
     ensureAudio();
     const t = e.touches[0];
@@ -243,26 +270,38 @@ function init() {
   }
 
   gbPress(btnGbDash, () => {
+    if (session.onStartScreen) { startGame(); return; }
     if (!session.paused) session.wantDash = true;
   });
 
   gbPress(btnGbFireball, () => {
+    if (session.onStartScreen) { startGame(); return; }
     if (!session.paused) session.wantFireball = true;
   });
 
   gbPress(btnGbAuto, () => {
+    if (session.onStartScreen) { startGame(); return; }
     if (session.paused) return;
     session.autoAttack = !session.autoAttack;
     showToast(session.autoAttack ? "Auto-attack ON" : "Auto-attack OFF");
   });
 
   gbPress(btnGbMenu2, () => {
+    if (session.onStartScreen) { startGame(); return; }
     if (session.shopOpen) { closeShop(); return; }
     if (session.paused)   { closeMenu(); return; }
     openMenu();
   });
 
   window.addEventListener("keydown", (e) => {
+    // On start screen, any key (except browser shortcuts) begins the game
+    if (session.onStartScreen) {
+      if (!e.metaKey && !e.ctrlKey && e.code !== "F5" && e.code !== "F11" && e.code !== "F12") {
+        startGame();
+      }
+      return;
+    }
+
     // Escape: close shop → close menu → open menu
     if (e.code === "Escape") {
       if (session.shopOpen) { closeShop(); return; }
@@ -294,7 +333,6 @@ function init() {
     session.keys[e.code] = false;
   });
 
-  for (let i = 0; i < 5; i++) spawnEnemy();
   updateSceneHud();
 
   requestAnimationFrame((t) => {

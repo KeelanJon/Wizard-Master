@@ -29,7 +29,7 @@ export function update(dt) {
     }
   }
 
-  if (session.shopOpen || session.paused) return;
+  if (session.onStartScreen || session.shopOpen || session.paused) return;
 
   const p = state.player;
   const baseSpeed = 55 + state.upgrades.speed * 12;
