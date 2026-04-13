@@ -17,7 +17,7 @@ import { dist } from "./math-utils.js";
 import { sfxHit, sfxKill, sfxCast, ensureAudio } from "./audio.js";
 import { burstCoins, spawnParticles, floatText } from "./effects.js";
 import { saveGame } from "./persistence.js";
-import { updateHearts, showToast } from "./ui.js";
+import { updateHearts } from "./ui.js";
 
 export function damageEnemy(best, dmg) {
   best.hp -= dmg;
@@ -50,12 +50,33 @@ export function playerDamage() {
   updateHearts();
   spawnParticles(state.player.x, state.player.y, "#ff6b6b", 10);
   if (state.player.hp <= 0) {
-    state.player.hp = state.upgrades.maxHp;
-    state.player.x = MAP_W * TILE * 0.5;
-    state.player.y = MAP_H * TILE * 0.65;
-    session.shakeT = 0.7;
-    showToast("You faint and wake at the village edge…");
-    saveGame();
+    // Only trigger the death sequence once (guard against re-entry)
+    if (state.fade.dir === 0 && state.fade.alpha === 0) {
+      session.shakeT = 0.7;
+      state.fade.dir = 1;
+      state.fade.cb = () => {
+        // Reset player to starting position with full health
+        state.player.hp = state.upgrades.maxHp;
+        state.player.x = MAP_W * TILE * 0.5;
+        state.player.y = MAP_H * TILE * 0.65;
+        state.player.vx = 0;
+        state.player.vy = 0;
+        state.player.invuln = 0;
+        state.player.dashT = 0;
+        state.player.dashCooldown = 0;
+        state.scene = "overworld";
+        // Clear all active entities
+        state.enemies.length = 0;
+        state.projectiles.length = 0;
+        state.fireballs.length = 0;
+        state.drops.length = 0;
+        state.particles.length = 0;
+        state.floatTexts.length = 0;
+        saveGame();
+        // Return to start screen (fade will auto-reverse, revealing start screen)
+        session.onStartScreen = true;
+      };
+    }
   }
 }
 

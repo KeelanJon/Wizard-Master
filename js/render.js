@@ -574,6 +574,83 @@ export function drawWorld() {
   else drawOverworldScene();
 }
 
+function drawStartScreen() {
+  // Dark background
+  ctx.fillStyle = "#0a0614";
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+  // Stars — deterministic pattern so they don't flicker each frame
+  for (let i = 0; i < 90; i++) {
+    const sx = (i * 137 + 29) % VIEW_W;
+    const sy = (i * 97  + 13) % (VIEW_H - 24);
+    ctx.fillStyle = i % 7 === 0
+      ? `rgba(180,150,255,${0.3 + (i % 4) * 0.1})`
+      : `rgba(255,255,255,${0.25 + (i % 5) * 0.08})`;
+    ctx.fillRect(sx, sy, 1, 1);
+  }
+
+  // Ambient glow behind title
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.fillStyle = "rgba(70,30,140,0.28)";
+  ctx.beginPath();
+  ctx.ellipse(VIEW_W / 2, 52, 110, 26, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Title
+  ctx.textAlign = "center";
+  ctx.font = "bold 22px monospace";
+  ctx.strokeStyle = "#200800";
+  ctx.lineWidth = 5;
+  ctx.strokeText("COIN QUEST", VIEW_W / 2, 52);
+  ctx.fillStyle = "#e9c46a";
+  ctx.fillText("COIN QUEST", VIEW_W / 2, 52);
+
+  // Subtitle
+  ctx.font = "9px monospace";
+  ctx.strokeStyle = "#0a0614";
+  ctx.lineWidth = 2;
+  ctx.strokeText("— Young Wizard —", VIEW_W / 2, 67);
+  ctx.fillStyle = "#9b86c9";
+  ctx.fillText("— Young Wizard —", VIEW_W / 2, 67);
+
+  // Thin decorative separator
+  ctx.fillStyle = "rgba(120,90,180,0.35)";
+  ctx.fillRect(50, 76, VIEW_W - 100, 1);
+
+  // Soft glow beneath wizard feet
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.fillStyle = "rgba(60,30,160,0.3)";
+  ctx.beginPath();
+  ctx.ellipse(VIEW_W / 2, 140, 28, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Wizard sprite — scaled 2× for the hero pose
+  ctx.save();
+  ctx.translate(VIEW_W / 2, 128);
+  ctx.scale(2, 2);
+  drawWizard(0, 0, 1, 0);
+  ctx.restore();
+
+  // Second decorative separator
+  ctx.fillStyle = "rgba(120,90,180,0.35)";
+  ctx.fillRect(50, 150, VIEW_W - 100, 1);
+
+  // Blinking prompt
+  if (Math.floor(Date.now() / 550) % 2 === 0) {
+    ctx.textAlign = "center";
+    ctx.font = "7px monospace";
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.strokeText("PRESS ANY KEY TO BEGIN", VIEW_W / 2, 174);
+    ctx.fillStyle = "#c8c0e0";
+    ctx.fillText("PRESS ANY KEY TO BEGIN", VIEW_W / 2, 174);
+  }
+}
+
 export function drawFrame() {
   ctx.save();
   ctx.scale(session.scale, session.scale);
@@ -589,59 +666,60 @@ export function drawFrame() {
 
   ctx.fillStyle = COL.void;
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  drawWorld();
 
-  // Bottom hint bar
-  ctx.fillStyle = "rgba(0,0,0,0.35)";
-  ctx.fillRect(0, VIEW_H - 18, VIEW_W, 18);
+  if (session.onStartScreen) {
+    drawStartScreen();
+  } else {
+    drawWorld();
 
-  ctx.fillStyle = "#ccc";
-  ctx.font = "7px monospace";
-  ctx.textAlign = "left";
-  const autoLabel = session.autoAttack ? "Auto ON" : "Auto OFF";
-  const fireballHint = state.skills.fireball.owned ? " · E: Fireball" : "";
-  const hint =
-    state.scene === "tower"
-      ? "Rest · Speak to the Master (shop) · Walk to the door to leave"
-      : `WASD/Stick · Click to aim · Q: ${autoLabel}${fireballHint}`;
-  ctx.fillText(hint, 6, VIEW_H - 6);
+    // Bottom hint bar
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.fillRect(0, VIEW_H - 18, VIEW_W, 18);
 
-  // Dash cooldown indicator (overworld only) — bottom-right corner of the bar
-  if (state.scene === "overworld") {
-    const p = state.player;
-    const ready = p.dashCooldown <= 0;
-    const frac = ready ? 1 : 1 - p.dashCooldown / 1.5;
-    const barW = 22;
-    const bx = VIEW_W - barW - 4;
-    const by = VIEW_H - 13;
+    ctx.fillStyle = "#ccc";
+    ctx.font = "7px monospace";
+    ctx.textAlign = "left";
+    const autoLabel = session.autoAttack ? "Auto ON" : "Auto OFF";
+    const fireballHint = state.skills.fireball.owned ? " · E: Fireball" : "";
+    const hint =
+      state.scene === "tower"
+        ? "Rest · Speak to the Master (shop) · Walk to the door to leave"
+        : `WASD/Stick · Click to aim · Q: ${autoLabel}${fireballHint}`;
+    ctx.fillText(hint, 6, VIEW_H - 6);
 
-    // Track background
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(bx - 1, by - 1, barW + 2, 6);
+    // Dash cooldown indicator (overworld only) — bottom-right corner of the bar
+    if (state.scene === "overworld") {
+      const p = state.player;
+      const ready = p.dashCooldown <= 0;
+      const frac = ready ? 1 : 1 - p.dashCooldown / 1.5;
+      const barW = 22;
+      const bx = VIEW_W - barW - 4;
+      const by = VIEW_H - 13;
 
-    // Fill
-    ctx.fillStyle = ready ? "#38bdf8" : "#1e4060";
-    ctx.fillRect(bx, by, Math.round(barW * frac), 4);
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.fillRect(bx - 1, by - 1, barW + 2, 6);
 
-    // Glow pulse when ready
-    if (ready) {
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-      ctx.fillStyle = "rgba(56,189,248,0.35)";
-      ctx.fillRect(bx, by, barW, 4);
-      ctx.restore();
+      ctx.fillStyle = ready ? "#38bdf8" : "#1e4060";
+      ctx.fillRect(bx, by, Math.round(barW * frac), 4);
+
+      if (ready) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.fillStyle = "rgba(56,189,248,0.35)";
+        ctx.fillRect(bx, by, barW, 4);
+        ctx.restore();
+      }
+
+      ctx.fillStyle = ready ? "#e0f2fe" : "#64748b";
+      ctx.font = "5px monospace";
+      ctx.textAlign = "right";
+      ctx.fillText("SPC", bx - 3, by + 4);
     }
 
-    // Label
-    ctx.fillStyle = ready ? "#e0f2fe" : "#64748b";
-    ctx.font = "5px monospace";
-    ctx.textAlign = "right";
-    ctx.fillText("SPC", bx - 3, by + 4);
+    drawSkillBar();
   }
 
-  drawSkillBar();
-
-  // Fade-to-black overlay for scene transitions
+  // Fade-to-black overlay (applies to both start screen and game world)
   if (state.fade.alpha > 0) {
     ctx.fillStyle = `rgba(0,0,0,${state.fade.alpha.toFixed(3)})`;
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);

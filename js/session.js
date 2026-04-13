@@ -4,6 +4,7 @@ export const session = {
   lastTime: 0,
   shopOpen: false,
   paused: false,
+  onStartScreen: true,
   autoAttack: true,
   wantDash: false,
   wantFireball: false,
